@@ -59,7 +59,6 @@ sub gen_fish_complete_from_getopt_long_spec {
             or die "Can't parse option spec '$ospec'";
         $res->{min_vals} //= $res->{type} ? 1 : 0;
         $res->{max_vals} //= $res->{type} || $res->{opttype} ? 1:0;
-        use DD; dd $res;
         for my $o0 (@{ $res->{opts} }) {
             my @o = $res->{is_neg} && length($o0) > 1 ?
                 ($o0, "no$o0", "no-$o0") : ($o0);
