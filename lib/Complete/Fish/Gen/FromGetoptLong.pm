@@ -77,7 +77,7 @@ sub gen_fish_complete_from_getopt_long_spec {
 }
 
 1;
-# ABSTRACT: Generate tab completion commands for the fish shell
+# ABSTRACT:
 
 =head1 SYNOPSIS
 
