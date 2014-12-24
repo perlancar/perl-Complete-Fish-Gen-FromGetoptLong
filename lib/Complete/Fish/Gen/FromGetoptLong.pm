@@ -7,6 +7,7 @@ use 5.010001;
 use strict;
 use warnings;
 
+#use Complete;
 use Getopt::Long::Util qw(parse_getopt_long_opt_spec);
 use String::ShellQuote;
 
