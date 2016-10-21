@@ -1,5 +1,12 @@
 Revision history for Complete-Fish-Gen-FromGetoptLong
 
+0.05    2016-10-21 (PERLANCAR)
+
+	- Add function: gen_fish_complete_from_getopt_long_script.
+
+	- Support completing argument (<>).
+
+
 0.04    2016-10-21 (PERLANCAR)
 
         - Add option: compname to allow it be different than cmdname.
