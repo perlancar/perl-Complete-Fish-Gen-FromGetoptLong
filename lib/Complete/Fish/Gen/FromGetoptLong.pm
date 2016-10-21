@@ -58,23 +58,33 @@ sub gen_fish_complete_from_getopt_long_spec {
 
     my @cmds;
     my $prefix = "complete -c ".shell_quote($cmdname);
-    push @cmds, "$prefix -e"; # currently does not work (fish bug)
-    for my $ospec (sort keys %$gospec) {
+    my $a_val  = shell_quote("(begin; set -lx COMP_SHELL bash; set -lx COMP_LINE (commandline); set -lx COMP_POINT (commandline -C); ".shell_quote($compname)."; end)");
+    push @cmds, "$prefix -e"; # currently does not work (fish bug?)
+    for my $ospec (sort {
+        # make sure <> is the last
+        my $a_is_diamond = $a eq '<>' ? 1:0;
+        my $b_is_diamond = $b eq '<>' ? 1:0;
+        $a_is_diamond <=> $b_is_diamond || $a cmp $b
+    } keys %$gospec) {
         my $res = parse_getopt_long_opt_spec($ospec)
             or die "Can't parse option spec '$ospec'";
-        $res->{min_vals} //= $res->{type} ? 1 : 0;
-        $res->{max_vals} //= $res->{type} || $res->{opttype} ? 1:0;
-        for my $o0 (@{ $res->{opts} }) {
-            my @o = $res->{is_neg} && length($o0) > 1 ?
-                ($o0, "no$o0", "no-$o0") : ($o0);
-            for my $o (@o) {
-                my $cmd = $prefix;
-                $cmd .= length($o) > 1 ? " -l '$o'" : " -s '$o'";
-                # XXX where to get summary from?
-                if ($res->{min_vals} > 0) {
-                    $cmd .= " -r -f -a ".shell_quote("(begin; set -lx COMP_SHELL bash; set -lx COMP_LINE (commandline); set -lx COMP_POINT (commandline -C); ".shell_quote($compname)."; end)");
+        if ($res->{is_arg}) {
+            push @cmds, "$prefix -a $a_val";
+        } else {
+            $res->{min_vals} //= $res->{type} ? 1 : 0;
+            $res->{max_vals} //= $res->{type} || $res->{opttype} ? 1:0;
+            for my $o0 (@{ $res->{opts} }) {
+                my @o = $res->{is_neg} && length($o0) > 1 ?
+                    ($o0, "no$o0", "no-$o0") : ($o0);
+                for my $o (@o) {
+                    my $cmd = $prefix;
+                    $cmd .= length($o) > 1 ? " -l '$o'" : " -s '$o'";
+                    # XXX where to get summary from?
+                    if ($res->{min_vals} > 0) {
+                        $cmd .= " -r -f -a $a_val";
+                    }
+                    push @cmds, $cmd;
                 }
-                push @cmds, $cmd;
             }
         }
     }
