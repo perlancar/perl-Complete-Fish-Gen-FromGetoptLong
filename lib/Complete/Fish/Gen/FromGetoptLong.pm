@@ -35,6 +35,10 @@ _
             summary => 'Command name',
             schema => 'str*',
         },
+        compname => {
+            summary => 'Completer name (in case different from cmdname)',
+            schema => 'str*',
+        },
     },
     result => {
         schema => 'str*',
@@ -50,6 +54,7 @@ sub gen_fish_complete_from_getopt_long_spec {
     if (!$cmdname) {
         ($cmdname = $0) =~ s!.+/!!;
     }
+    my $compname = $args{compname} // $cmdname;
 
     my @cmds;
     my $prefix = "complete -c ".shell_quote($cmdname);
