@@ -14,7 +14,21 @@ our %SPEC;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(gen_fish_complete_from_getopt_long_spec);
+our @EXPORT_OK = qw(
+                       gen_fish_complete_from_getopt_long_script
+                       gen_fish_complete_from_getopt_long_spec
+               );
+
+my %common_args = (
+    cmdname => {
+        summary => 'Command name',
+        schema => 'str*',
+    },
+    compname => {
+        summary => 'Completer name (in case different from cmdname)',
+        schema => 'str*',
+    },
+);
 
 $SPEC{gen_fish_complete_from_getopt_long_spec} = {
     v => 1.1,
@@ -31,14 +45,7 @@ _
             req => 1,
             pos => 0,
         },
-        cmdname => {
-            summary => 'Command name',
-            schema => 'str*',
-        },
-        compname => {
-            summary => 'Completer name (in case different from cmdname)',
-            schema => 'str*',
-        },
+        %common_args,
     },
     result => {
         schema => 'str*',
@@ -91,14 +98,63 @@ sub gen_fish_complete_from_getopt_long_spec {
     [200, "OK", join("", map {"$_\n"} @cmds)];
 }
 
+$SPEC{gen_fish_complete_from_getopt_long_script} = {
+    v => 1.1,
+    summary => 'Generate fish completion script from Getopt::Long script',
+    description => <<'_',
+
+
+_
+    args => {
+        filename => {
+            schema => 'filename*',
+            req => 1,
+            pos => 0,
+        },
+        %common_args,
+    },
+    result => {
+        schema => 'str*',
+        summary => 'A script that can be fed to the fish shell',
+    },
+};
+sub gen_fish_complete_from_getopt_long_script {
+    my %args = @_;
+
+    my $filename = $args{filename};
+    return [404, "No such file or not a file: $filename"] unless -f $filename;
+
+    require Getopt::Long::Dump;
+    my $dump_res = Getopt::Long::Dump::dump_getopt_long_script(
+        filename => $filename,
+    );
+    return $dump_res unless $dump_res->[0] == 200;
+
+    my $cmdname = $args{cmdname};
+    if (!$cmdname) {
+        ($cmdname = $filename) =~ s!.+/!!;
+    }
+    my $compname = $args{compname} // $cmdname;
+
+    my $glspec = $dump_res->[2];
+
+    # GL:Complete scripts can also complete arguments
+    my $mod = $dump_res->[3]{'func.detect_res'}[3]{'func.module'} // '';
+    if ($mod eq 'Getopt::Long::Complete') {
+        $glspec->{'<>'} = sub {};
+    }
+
+    gen_fish_complete_from_getopt_long_spec(
+        spec => $dump_res->[2],
+        cmdname => $cmdname,
+        compname => $compname,
+    );
+}
+
 1;
-# ABSTRACT:
+# ABSTRACT: Generate fish completion script from Getopt::Long spec/script
 
 =head1 SYNOPSIS
 
 
 =head1 SEE ALSO
-
-This module is used by L<Getopt::Long::Complete>.
-
-L<Perinci::Sub::To::FishComplete>
