@@ -67,7 +67,7 @@ sub gen_fish_complete_from_getopt_long_spec {
                 $cmd .= length($o) > 1 ? " -l '$o'" : " -s '$o'";
                 # XXX where to get summary from?
                 if ($res->{min_vals} > 0) {
-                    $cmd .= " -r -f -a ".shell_quote("(begin; set -lx COMP_SHELL fish; set -lx COMP_LINE (commandline); set -lx COMP_POINT (commandline -C); ".shell_quote($cmdname)."; end)");
+                    $cmd .= " -r -f -a ".shell_quote("(begin; set -lx COMP_SHELL bash; set -lx COMP_LINE (commandline); set -lx COMP_POINT (commandline -C); ".shell_quote($compname)."; end)");
                 }
                 push @cmds, $cmd;
             }
