@@ -19,17 +19,6 @@ our @EXPORT_OK = qw(
                        gen_fish_complete_from_getopt_long_spec
                );
 
-my %common_args = (
-    cmdname => {
-        summary => 'Command name',
-        schema => 'str*',
-    },
-    compname => {
-        summary => 'Completer name (in case different from cmdname)',
-        schema => 'str*',
-    },
-);
-
 $SPEC{gen_fish_complete_from_getopt_long_spec} = {
     v => 1.1,
     summary => 'From Getopt::Long spec, generate tab completion '.
@@ -45,7 +34,15 @@ _
             req => 1,
             pos => 0,
         },
-        %common_args,
+        cmdname => {
+            summary => 'Command name to be completed',
+            schema => 'str*',
+            req => 1,
+        },
+        compname => {
+            summary => 'Completer name, if there is a completer for option values',
+            schema => 'str*',
+        },
     },
     result => {
         schema => 'str*',
@@ -56,16 +53,13 @@ sub gen_fish_complete_from_getopt_long_spec {
     my %args = @_;
 
     my $gospec = $args{spec} or return [400, "Please specify 'spec'"];
-
-    my $cmdname = $args{cmdname};
-    if (!$cmdname) {
-        ($cmdname = $0) =~ s!.+/!!;
-    }
-    my $compname = $args{compname} // $cmdname;
+    my $cmdname = $args{cmdname} or return [400, "Please specify cmdname"];
+    my $compname = $args{compname};
 
     my @cmds;
     my $prefix = "complete -c ".shell_quote($cmdname);
-    my $a_val  = shell_quote("(begin; set -lx COMP_SHELL bash; set -lx COMP_LINE (commandline); set -lx COMP_POINT (commandline -C); ".shell_quote($compname)."; end)");
+    my $a_val  = shell_quote("(begin; set -lx COMP_SHELL fish; set -lx COMP_LINE (commandline); set -lx COMP_POINT (commandline -C); ".shell_quote($compname)."; end)")
+        if $compname;
     push @cmds, "$prefix -e"; # currently does not work (fish bug?)
     for my $ospec (sort {
         # make sure <> is the last
@@ -75,7 +69,7 @@ sub gen_fish_complete_from_getopt_long_spec {
     } keys %$gospec) {
         my $res = parse_getopt_long_opt_spec($ospec)
             or die "Can't parse option spec '$ospec'";
-        if ($res->{is_arg}) {
+        if ($res->{is_arg} && $compname) {
             push @cmds, "$prefix -a $a_val";
         } else {
             $res->{min_vals} //= $res->{type} ? 1 : 0;
@@ -88,7 +82,11 @@ sub gen_fish_complete_from_getopt_long_spec {
                     $cmd .= length($o) > 1 ? " -l '$o'" : " -s '$o'";
                     # XXX where to get summary from?
                     if ($res->{min_vals} > 0) {
-                        $cmd .= " -r -f -a $a_val";
+                        if ($compname) {
+                            $cmd .= " -r -f -a $a_val";
+                        } else {
+                            $cmd .= " -r";
+                        }
                     }
                     push @cmds, $cmd;
                 }
@@ -111,7 +109,14 @@ _
             req => 1,
             pos => 0,
         },
-        %common_args,
+        cmdname => {
+            summary => 'Command name to be completed, defaults to filename',
+            schema => 'str*',
+        },
+        compname => {
+            summary => 'Completer name',
+            schema => 'str*',
+        },
     },
     result => {
         schema => 'str*',
@@ -134,13 +139,14 @@ sub gen_fish_complete_from_getopt_long_script {
     if (!$cmdname) {
         ($cmdname = $filename) =~ s!.+/!!;
     }
-    my $compname = $args{compname} // $cmdname;
+    my $compname = $args{compname};
 
     my $glspec = $dump_res->[2];
 
     # GL:Complete scripts can also complete arguments
     my $mod = $dump_res->[3]{'func.detect_res'}[3]{'func.module'} // '';
     if ($mod eq 'Getopt::Long::Complete') {
+        $compname //= $cmdname;
         $glspec->{'<>'} = sub {};
     }
 
