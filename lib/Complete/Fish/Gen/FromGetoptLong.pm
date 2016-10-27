@@ -34,6 +34,17 @@ _
             req => 1,
             pos => 0,
         },
+        opt_desc => {
+            summary => 'Description for each option',
+            description => <<'_',
+
+This is optional and allows adding description for the complete command. Each
+key of the hash should correspond to the option name without the dashes, e.g.
+`s`, `long`.
+
+_
+            schema => 'hash*',
+        },
         cmdname => {
             summary => 'Command name to be completed',
             schema => 'str*',
@@ -55,6 +66,7 @@ sub gen_fish_complete_from_getopt_long_spec {
     my $gospec = $args{spec} or return [400, "Please specify 'spec'"];
     my $cmdname = $args{cmdname} or return [400, "Please specify cmdname"];
     my $compname = $args{compname};
+    my $opt_desc = $args{opt_desc};
 
     my @cmds;
     my $prefix = "complete -c ".shell_quote($cmdname);
@@ -80,7 +92,9 @@ sub gen_fish_complete_from_getopt_long_spec {
                 for my $o (@o) {
                     my $cmd = $prefix;
                     $cmd .= length($o) > 1 ? " -l '$o'" : " -s '$o'";
-                    # XXX where to get summary from?
+                    if ($opt_desc && $opt_desc->{$o}) {
+                        $cmd .= " -d ".shell_quote($opt_desc->{$o});
+                    }
                     if ($res->{min_vals} > 0) {
                         if ($compname) {
                             $cmd .= " -r -f -a $a_val";
