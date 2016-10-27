@@ -108,6 +108,7 @@ _
             schema => 'filename*',
             req => 1,
             pos => 0,
+            cmdline_aliases => {f=>{}},
         },
         cmdname => {
             summary => 'Command name to be completed, defaults to filename',
@@ -116,6 +117,10 @@ _
         compname => {
             summary => 'Completer name',
             schema => 'str*',
+        },
+        skip_detect => {
+            schema => ['bool', is=>1],
+            cmdline_aliases => {D=>{}},
         },
     },
     result => {
@@ -132,6 +137,7 @@ sub gen_fish_complete_from_getopt_long_script {
     require Getopt::Long::Dump;
     my $dump_res = Getopt::Long::Dump::dump_getopt_long_script(
         filename => $filename,
+        skip_detect => $args{skip_detect},
     );
     return $dump_res unless $dump_res->[0] == 200;
 
