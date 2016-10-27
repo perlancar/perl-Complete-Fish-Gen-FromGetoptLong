@@ -118,6 +118,8 @@ $SPEC{gen_fish_complete_from_getopt_long_script} = {
 This routine generate fish `complete` command for each short/long option,
 enabling fish to display the options in a different color.
 
+Getopt::Long::Complete scripts are also supported.
+
 _
     args => {
         filename => {
